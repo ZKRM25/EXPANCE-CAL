@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>List Amount Analyzer by ZKRM</title>
+<style>
+  /* --- Minimalist High-Contrast Theme Variables --- */
+  :root {
+    /* Base Colors (Light Mode) */
+    --primary-color: #000000;
+    --bg-color: #ffffff;
+    --card-bg: #f9f9f9;
+    --text-color: #000000;
+    --muted-color: #666666;
+    --border-color: #dddddd;
+
+    /* Data Colors */
+    --negative: #d32f2f; /* Red */
+    --positive: #388e3c; /* Green */
+
+    /* Design Specs */
+    --radius: 8px;
+    --shadow: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  /* --- Dark Mode Override --- */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --primary-color: #ffffff;
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --text-color: #ffffff;
+      --muted-color: #aaaaaa;
+      --border-color: #333333;
+    }
+  }
+
+  /* --- Global and Layout Styles --- */
+  html, body { 
+    height: 100%; 
+    margin: 0; 
+    background: var(--bg-color); 
+    color: var(--text-color);
+    -webkit-text-size-adjust: 100%;
+    transition: background 0.3s, color 0.3s;
+  }
+  
+  .app {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* --- Header and Controls --- */
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+  }
+  h1 { 
+    font-size: 1.6rem; 
+    margin: 0; 
+    font-weight: 700; 
+    flex-grow: 1;
+    color: var(--primary-color);
+  }
+  p.lead { 
+    margin: 0; 
+    color: var(--muted-color); 
+    font-size: 0.9rem; 
+    flex-basis: 100%; 
+    padding-top: 5px;
+  }
+  
+  /* --- Buttons (Clean, Square Look) --- */
+  button {
+    padding: 10px 18px;
+    border: 2px solid var(--text-color);
+    border-radius: var(--radius);
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:hover, button:focus {
+    background: var(--text-color);
+    color: var(--bg-color);
+  }
+  
+  /* Specific button styles */
+  #analyze-btn {
+    background: var(--primary-color);
+    color: var(--bg-color);
+  }
+  #analyze-btn:hover {
+    opacity: 0.85;
+  }
+  #reset-btn {
+    border-color: var(--negative);
+    color: var(--negative);
+  }
+  #reset-btn:hover {
+    background: var(--negative);
+    color: var(--bg-color);
+  }
+
+
+  /* --- Input Area --- */
+  textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius);
+    box-sizing: border-box;
+    font-size: 16px;
+    color: var(--text-color);
+    resize: vertical;
+    font-family: monospace;
+    margin-bottom: 25px;
+    background: var(--card-bg);
+    transition: border-color 0.2s;
+  }
+  textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+  }
+  
+  /* --- Summary Grid --- */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+  }
+  
+  .summary-box {
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--card-bg);
+    text-align: center;
+  }
+
+  /* --- Data Presentation --- */
+  .summary-box h2 {
+    font-size: 0.95rem; 
+    margin: 0 0 8px 0; 
+    color: var(--muted-color);
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .summary-box p {
+    font-size: 2.5rem; 
+    font-weight: 900; 
+    margin: 0;
+    line-height: 1.1;
+  }
+  
+  /* --- Category List --- */
+  .summary-item {
+    grid-column: 1 / -1; 
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background: var(--card-bg);
+  }
+  .summary-item h3 {
+    font-size: 1.2rem; 
+    margin: 0 0 15px 0; 
+    font-weight: 700;
+    color: var(--text-color);
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .summary-item ul {
+    list-style: none; 
+    padding: 0; 
+    margin: 0;
+    max-height: 350px;
+    overflow-y: auto;
+  }
+  .summary-item li {
+    padding: 12px 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 1rem;
+  }
+  .summary-item li:not(:last-child) {
+    border-bottom: 1px solid var(--border-color); 
+  }
+  .summary-item li .value {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums; 
+  }
+
+  /* --- Color Coding --- */
+  .positive { color: var(--positive); }
+  .negative { color: var(--negative); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>List Amount Analyzer by ZKRM</h1>
+    <p class="lead"></p>
+    <button id="paste-btn" title="Paste data from clipboard">Paste</button>
+    <button id="analyze-btn" title="Calculate amounts">Analyze</button>
+    <button id="reset-btn" title="Clear all data">Clear All</button>
+  </header>
+  
+  <textarea id="input" placeholder="Paste Here:
+"></textarea>
+  
+  <div class="summary">
+    <div class="summary-box">
+      <h2>Net Total</h2>
+      <p id="total-el" class="data-total">0.00</p>
+    </div>
+    <div class="summary-box">
+      <h2>Total Entries</h2>
+      <p id="count-el">0</p>
+    </div>
+  </div>
+  
+  <div class="summary">
+    <div class="summary-item" id="category-list">
+      <h3>Summary By Category</h3>
+      <ul></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  function parseLines(text) {
+    const lines = text.trim().split('\n').filter(line => line.trim().length > 0);
+    const amounts = [];
+    const categoryTotals = {};
+    let total = 0;
+
+    for (const line of lines) {
+      // Use a regex to find the first number (the amount) and the rest of the line
+      const amountMatch = line.match(/^(\s*-?\s*\d[\d,.]*)/);
+      
+      if (!amountMatch) continue; // Skip if no amount is found
+
+      const amountStr = amountMatch[1].replace(/,/g, '');
+      const amount = parseFloat(amountStr);
+      
+      if (isNaN(amount)) continue; // Skip if it's not a valid number
+      
+      const finalAmount = amount;
+      total += finalAmount;
+      amounts.push(finalAmount);
+
+      // --- Category Extraction FIX ---
+      // Get the rest of the line after the amount string
+      const lineWithoutAmount = line.substring(amountMatch[0].length).trim();
+      const parts = lineWithoutAmount.split(/\s+/).filter(p => p.length > 0);
+      
+      let category = 'Uncategorized';
+
+      if (parts.length > 0) {
+          // A simple but effective guess: assume date components are the next 2 parts (Day Month)
+          // and everything after the second part is the category.
+          if (parts.length > 2) {
+              category = parts.slice(2).join(' '); // Skip Day and Month
+          } else if (parts.length === 1) {
+              category = parts[0]; // Case: -5.00 Coffee (no date)
+          } else if (parts.length === 2) {
+              // Check if the second word looks like a month (e.g., '6 Aug'). If so, Uncategorized is correct.
+              // If not a month (e.g., 'Fast Food'), then use both words as category.
+              if (!/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$/i.test(parts[1])) {
+                   category = parts.join(' ');
+              }
+          }
+      }
+      
+      // Final cleanup of the category name
+      category = category.replace(/[.,]/g, '').trim() || 'Uncategorized'; 
+      // --- End Category Extraction FIX ---
+
+      // Aggregate by Category
+      if (!categoryTotals[category]) {
+        categoryTotals[category] = 0;
+      }
+      categoryTotals[category] += finalAmount;
+    }
+
+    return {
+      count: amounts.length,
+      total: total,
+      categoryTotals: categoryTotals,
+    };
+  }
+
+  function formatCurrency(amount) {
+    try {
+        return new Intl.NumberFormat(navigator.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+    } catch (e) {
+        return amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+  }
+
+  function updateSummary(parsed) {
+    const total = parsed.total;
+    
+    countEl.textContent = parsed.count;
+    totalEl.textContent = formatCurrency(total);
+
+    // Colorize Net Total based on sign
+    totalEl.classList.remove('positive', 'negative');
+    if (total > 0.01) {
+      totalEl.classList.add('positive');
+    } else if (total < -0.01) {
+      totalEl.classList.add('negative');
+    }
+
+    // Clear and rebuild category list
+    categoryList.querySelector('ul').innerHTML = '';
+    const sortedCategories = Object.entries(parsed.categoryTotals).sort(([, a], [, b]) => b - a);
+    for (const [category, amount] of sortedCategories) {
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${category}</span><span class="value ${amount >= 0 ? 'positive' : 'negative'}">${formatCurrency(amount)}</span>`;
+      categoryList.querySelector('ul').appendChild(li);
+    }
+  }
+
+  const input = document.getElementById('input');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const pasteBtn = document.getElementById('paste-btn');
+  const resetBtn = document.getElementById('reset-btn');
+
+  const countEl = document.getElementById('count-el');
+  const totalEl = document.getElementById('total-el');
+  const categoryList = document.getElementById('category-list');
+  
+  function analyzeCurrentInput() {
+    const parsed = parseLines(input.value || '');
+    updateSummary(parsed);
+    // Store the last parsed data on the analyze button
+    analyzeBtn._lastParsed = parsed; 
+  }
+
+  // --- Event Listeners ---
+  analyzeBtn.addEventListener('click', analyzeCurrentInput);
+
+  pasteBtn.addEventListener('click', async ()=> {
+    try {
+        const text = await navigator.clipboard.readText();
+        if (text) {
+            input.value = text;
+            input.focus();
+            analyzeCurrentInput(); // Auto-analyze after paste
+            alert('Data pasted and analyzed!');
+        } else {
+            alert('Clipboard is empty or access denied. Please paste manually into the box.');
+        }
+    } catch(e) {
+        alert('Automatic paste failed. Please tap inside the box and paste manually, then tap Analyze.');
+        input.focus();
+    }
+  });
+
+  resetBtn.addEventListener('click', ()=> {
+    input.value = '';
+    countEl.textContent = '0';
+    totalEl.textContent = '0.00';
+    totalEl.classList.remove('positive', 'negative');
+    categoryList.querySelector('ul').innerHTML = '';
+    analyzeBtn._lastParsed = null;
+    alert('All data has been cleared.');
+    input.focus();
+  });
+
+  // Ensure the UI is reset on initial load
+  document.addEventListener('DOMContentLoaded', () => {
+    input.value = '';
+    countEl.textContent = '0';
+    totalEl.textContent = '0.00';
+    categoryList.querySelector('ul').innerHTML = '';
+  });
+</script>
+</body>
+</html>
